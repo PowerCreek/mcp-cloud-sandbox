@@ -1,0 +1,31 @@
+{
+    "name": "hello-world-v2-mcp",
+    "version": "1.0.0",
+    "description": "A simple Hello World V2 MCP server for testing custom development environment",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node --watch index.js"
+    },
+    "keywords": [
+        "mcp",
+        "hello-world",
+        "development"
+    ],
+    "author": "MCP Development Team",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.2"
+    },
+    "mcpServer": {
+        "name": "hello-world",
+        "description": "Simple greeting and demo tools",
+        "capabilities": {
+            "tools": true,
+            "resources": false,
+            "prompts": false
+        },
+        "defaultPort": 3100
+    }
+}

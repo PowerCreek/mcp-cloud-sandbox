@@ -1,0 +1,23 @@
+{
+    "name": "dev-mcp-service",
+    "version": "1.0.0",
+    "description": "Development MCP service manager for custom MCP servers",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node index.js",
+        "dev": "node --watch index.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "node-fetch": "^3.3.0",
+        "chokidar": "^3.5.3"
+    },
+    "keywords": [
+        "mcp",
+        "development",
+        "service-manager"
+    ],
+    "author": "MCP Development Team",
+    "license": "MIT"
+}

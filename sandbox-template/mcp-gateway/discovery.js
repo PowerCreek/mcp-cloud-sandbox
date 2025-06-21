@@ -11,7 +11,7 @@ export class MCPServiceDiscovery {
         this.discoveryEndpoints = new Set();
         this.refreshInterval = 30000; // 30 seconds
         this.lastRefresh = 0;
-        
+
         eventBus.emit('discovery-init', { timestamp: new Date().toISOString() });
     }
 
@@ -25,10 +25,10 @@ export class MCPServiceDiscovery {
                 type: 'static',
                 registered: new Date().toISOString()
             });
-            eventBus.emit('service-registered', { 
-                serviceName, 
-                type: 'static', 
-                url: config.url 
+            eventBus.emit('service-registered', {
+                serviceName,
+                type: 'static',
+                url: config.url
             });
         }
         console.log(`📋 Registered ${Object.keys(staticServices).length} static services`);
@@ -59,23 +59,23 @@ export class MCPServiceDiscovery {
                 method: 'GET',
                 timeout: 5000
             });
-            
+
             if (!healthCheck.ok) {
                 throw new Error(`Health check failed: ${healthCheck.status}`);
             }
 
             this.services.set(serviceName, config);
-            eventBus.emit('service-registered', { 
-                serviceName, 
-                type: 'dynamic', 
-                url: serviceConfig.url 
+            eventBus.emit('service-registered', {
+                serviceName,
+                type: 'dynamic',
+                url: serviceConfig.url
             });
             console.log(`✅ Dynamically registered service: ${serviceName}`);
             return true;
         } catch (error) {
-            eventBus.emit('service-registration-failed', { 
-                serviceName, 
-                error: error.message 
+            eventBus.emit('service-registration-failed', {
+                serviceName,
+                error: error.message
             });
             console.error(`❌ Failed to register service ${serviceName}: ${error.message}`);
             return false;
@@ -131,8 +131,8 @@ export class MCPServiceDiscovery {
             return; // Skip if refreshed recently
         }
 
-        eventBus.emit('discovery-refresh-start', { 
-            endpointCount: this.discoveryEndpoints.size 
+        eventBus.emit('discovery-refresh-start', {
+            endpointCount: this.discoveryEndpoints.size
         });
 
         for (const endpoint of this.discoveryEndpoints) {
@@ -148,7 +148,7 @@ export class MCPServiceDiscovery {
                 }
 
                 const discoveredServices = await response.json();
-                
+
                 if (discoveredServices.services && Array.isArray(discoveredServices.services)) {
                     for (const service of discoveredServices.services) {
                         if (service.name && service.url) {
@@ -161,16 +161,16 @@ export class MCPServiceDiscovery {
                     }
                 }
             } catch (error) {
-                eventBus.emit('discovery-endpoint-error', { 
-                    endpoint, 
-                    error: error.message 
+                eventBus.emit('discovery-endpoint-error', {
+                    endpoint,
+                    error: error.message
                 });
                 console.error(`🔍❌ Discovery endpoint error (${endpoint}): ${error.message}`);
             }
         }
 
         this.lastRefresh = Date.now();
-        eventBus.emit('discovery-refresh-complete', { 
+        eventBus.emit('discovery-refresh-complete', {
             serviceCount: this.services.size,
             timestamp: new Date().toISOString()
         });
@@ -181,25 +181,25 @@ export class MCPServiceDiscovery {
      */
     async healthCheckServices() {
         const results = new Map();
-        
+
         for (const [serviceName, config] of this.services) {
             try {
                 const response = await fetch(`${config.url}/health`, {
                     method: 'GET',
                     timeout: 5000
                 });
-                
+
                 results.set(serviceName, {
                     healthy: response.ok,
                     status: response.status,
                     type: config.type,
                     lastCheck: new Date().toISOString()
                 });
-                
+
                 if (!response.ok) {
-                    eventBus.emit('service-unhealthy', { 
-                        serviceName, 
-                        status: response.status 
+                    eventBus.emit('service-unhealthy', {
+                        serviceName,
+                        status: response.status
                     });
                 }
             } catch (error) {
@@ -209,14 +209,14 @@ export class MCPServiceDiscovery {
                     type: config.type,
                     lastCheck: new Date().toISOString()
                 });
-                
-                eventBus.emit('service-unhealthy', { 
-                    serviceName, 
-                    error: error.message 
+
+                eventBus.emit('service-unhealthy', {
+                    serviceName,
+                    error: error.message
                 });
             }
         }
-        
+
         return Object.fromEntries(results);
     }
 
@@ -255,8 +255,8 @@ export class MCPServiceDiscovery {
             await this.refreshDynamicServices();
         }, this.refreshInterval);
 
-        eventBus.emit('auto-refresh-started', { 
-            interval: this.refreshInterval 
+        eventBus.emit('auto-refresh-started', {
+            interval: this.refreshInterval
         });
         console.log(`🔄 Started auto-refresh with ${this.refreshInterval}ms interval`);
     }

@@ -1,0 +1,19 @@
+{
+    "name": "calculator-mcp",
+    "version": "1.0.0",
+    "description": "Calculator MCP service with basic math operations",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^0.6.0",
+        "express": "^4.19.2"
+    },
+    "mcpServer": {
+        "description": "Calculator with basic math operations",
+        "capabilities": {
+            "tools": true
+        }
+    }
+}

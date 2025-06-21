@@ -56,9 +56,9 @@ discovery.startAutoRefresh();
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'healthy', 
-        timestamp: new Date().toISOString(), 
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
         services: Object.keys(discovery.getAllServices()),
         stats: discovery.getStats()
     });
@@ -68,7 +68,7 @@ app.get('/health', (req, res) => {
 app.get('/discovery/services', (req, res) => {
     // This endpoint can be used by external services to register themselves
     // For now, return sequential-thinking-v2 as a discoverable service
-    res.json({ 
+    res.json({
         services: [
             {
                 name: 'sequential-thinking-v2',
@@ -82,23 +82,23 @@ app.get('/discovery/services', (req, res) => {
 
 app.post('/discovery/register', async (req, res) => {
     const { serviceName, serviceConfig } = req.body;
-    
+
     if (!serviceName || !serviceConfig || !serviceConfig.url) {
-        return res.status(400).json({ 
-            error: 'Missing required fields: serviceName, serviceConfig.url' 
+        return res.status(400).json({
+            error: 'Missing required fields: serviceName, serviceConfig.url'
         });
     }
-    
+
     const success = await discovery.registerDynamicService(serviceName, serviceConfig);
-    
+
     if (success) {
-        res.json({ 
+        res.json({
             message: `Service ${serviceName} registered successfully`,
             service: discovery.getService(serviceName)
         });
     } else {
-        res.status(500).json({ 
-            error: `Failed to register service ${serviceName}` 
+        res.status(500).json({
+            error: `Failed to register service ${serviceName}`
         });
     }
 });
@@ -106,7 +106,7 @@ app.post('/discovery/register', async (req, res) => {
 app.delete('/discovery/services/:serviceName', (req, res) => {
     const { serviceName } = req.params;
     const success = discovery.unregisterService(serviceName);
-    
+
     if (success) {
         res.json({ message: `Service ${serviceName} unregistered successfully` });
     } else {
@@ -127,17 +127,17 @@ app.get('/discovery/health', async (req, res) => {
 app.all('/mcp/:service', async (req, res) => {
     const serviceName = req.params.service;
     const { method, params, id } = req.body;
-    
+
     eventBus.emit('route', { serviceName, method, params, id });
-    
+
     try {
         const config = discovery.getService(serviceName);
         if (!config) {
             eventBus.emit('error', { serviceName, error: 'Unknown MCP service' });
-            return res.status(404).json({ 
-                jsonrpc: '2.0', 
-                error: { code: -32000, message: `Unknown MCP service: ${serviceName}` }, 
-                id: id || null 
+            return res.status(404).json({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: `Unknown MCP service: ${serviceName}` },
+                id: id || null
             });
         }
 
@@ -151,39 +151,43 @@ app.all('/mcp/:service', async (req, res) => {
         // For initialize method, we need to get actual capabilities from the service
         if (method === 'initialize') {
             eventBus.emit('initialize-start', { serviceName, params });
-            
+
             // First initialize the underlying service
             const initResponse = await fetch(config.url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ jsonrpc: '2.0', method, params, id })
             });
-            
+
             if (!initResponse.ok) {
                 throw new Error(`HTTP ${initResponse.status}: ${initResponse.statusText}`);
             }
-            
+
             const initResult = await initResponse.json();
-            
+
             // Now get the actual tools list to populate capabilities
             const toolsResponse = await fetch(config.url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ jsonrpc: '2.0', method: 'tools/list', params: {}, id: 'tools-list' })
             });
-            
+
             let tools = [];
             if (toolsResponse.ok) {
-                const toolsResult = await toolsResponse.json();
-                if (toolsResult.result && toolsResult.result.tools) {
-                    tools = toolsResult.result.tools;
+                try {
+                    const toolsResult = await toolsResponse.json();
+                    if (toolsResult.jsonrpc === '2.0' && toolsResult.result && toolsResult.result.tools) {
+                        tools = toolsResult.result.tools;
+                    }
+                } catch (e) {
+                    // Invalid JSON response
                 }
             }
-            
+
             // Check for resources and prompts too
             let hasResources = false;
             let hasPrompts = false;
-            
+
             try {
                 const resourcesResponse = await fetch(config.url, {
                     method: 'POST',
@@ -192,12 +196,14 @@ app.all('/mcp/:service', async (req, res) => {
                 });
                 if (resourcesResponse.ok) {
                     const resourcesResult = await resourcesResponse.json();
-                    hasResources = !!(resourcesResult.result && resourcesResult.result.resources);
+                    if (resourcesResult.jsonrpc === '2.0' && resourcesResult.result && resourcesResult.result.resources) {
+                        hasResources = true;
+                    }
                 }
             } catch (e) {
                 // Resources not supported
             }
-            
+
             try {
                 const promptsResponse = await fetch(config.url, {
                     method: 'POST',
@@ -206,12 +212,14 @@ app.all('/mcp/:service', async (req, res) => {
                 });
                 if (promptsResponse.ok) {
                     const promptsResult = await promptsResponse.json();
-                    hasPrompts = !!(promptsResult.result && promptsResult.result.prompts);
+                    if (promptsResult.jsonrpc === '2.0' && promptsResult.result && promptsResult.result.prompts) {
+                        hasPrompts = true;
+                    }
                 }
             } catch (e) {
                 // Prompts not supported
             }
-            
+
             // Build the capabilities object with actual service capabilities
             const capabilities = {};
             if (tools.length > 0) {
@@ -223,7 +231,7 @@ app.all('/mcp/:service', async (req, res) => {
             if (hasPrompts) {
                 capabilities.prompts = {};
             }
-            
+
             // Return the initialization response with actual capabilities
             const response = {
                 jsonrpc: '2.0',
@@ -237,37 +245,37 @@ app.all('/mcp/:service', async (req, res) => {
                 },
                 id: id || null
             };
-            
+
             eventBus.emit('initialize-complete', { serviceName, capabilities, toolsCount: tools.length });
             return res.json(response);
         }
 
         // Proxy all other requests directly to the service
         eventBus.emit('proxy-request', { serviceName, method, params, id, url: config.url });
-        
+
         const response = await fetch(config.url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jsonrpc: '2.0', method, params, id })
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        
+
         eventBus.emit('proxy-response', { serviceName, method, id, result });
-        
+
         // Forward the exact response from the service
         res.json(result);
-        
+
     } catch (error) {
         eventBus.emit('error', { serviceName, method, error: error.message });
-        res.status(500).json({ 
-            jsonrpc: '2.0', 
-            error: { code: -32603, message: error.message || 'Internal server error' }, 
-            id: id || null 
+        res.status(500).json({
+            jsonrpc: '2.0',
+            error: { code: -32603, message: error.message || 'Internal server error' },
+            id: id || null
         });
     }
 });

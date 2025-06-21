@@ -95,6 +95,14 @@
     "sequential-thinking-v2-http": {
       "type": "http",
       "url": "http://localhost:8080/mcp/sequential-thinking-v2"
-    }
+    },
+    "hello-world-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/hello-world"
+    },
+    "hello-world-v2-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/hello-world-v2"
+    },
   }
 }

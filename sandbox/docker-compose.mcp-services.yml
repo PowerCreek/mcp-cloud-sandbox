@@ -176,6 +176,29 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     privileged: true
 
+  dev-mcp-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+      args:
+        SERVICE_NAME: dev-mcp-service
+    container_name: dev-mcp-service
+    environment:
+      - PORT=3200
+      - CUSTOM_MCPS_DIR=/app/custom-mcps
+      - GATEWAY_URL=http://mcp-gateway:8080
+      - NODE_ENV=development
+      - MCP_COMMAND=./entrypoint-dev-mcp-service.sh
+    ports:
+      - "3200:3200"
+    volumes:
+      - ./custom-mcps:/app/custom-mcps:ro
+    networks:
+      - ai-net
+    depends_on:
+      - mcp-gateway
+    restart: unless-stopped
+
 networks:
   ai-net:
     driver: bridge
