@@ -1,0 +1,96 @@
+{
+  // MCP Server Configuration for VS Code
+  // 
+  // 🔧 USAGE INSTRUCTIONS:
+  // 1. Start the sandbox: cd sandbox && docker-compose up -d
+  // 2. Test endpoints work: curl http://localhost:8080/health
+  // 3. Restart VS Code to load new MCP servers
+  // 4. Use HTTP endpoints (safer, sandboxed) or stdio (direct)
+  //
+  // ✅ TESTED HTTP ENDPOINTS: context7-http, supabase-http
+  // ⚠️  OTHER ENDPOINTS: May need environment configuration
+  "servers": {
+    // === STDIO/Direct Services (Commented Out) ===
+    // "browser-agent": {
+    //   "command": "./init/run-browser-agent-mcp.sh",
+    //   "env": {
+    //     "SUPABASE_URL": "${SUPABASE_URL}",
+    //     "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}"
+    //   },
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "mcp-proxy": {
+    //   "command": "node",
+    //   "args": [
+    //     "/workspaces/resource-setup-scratch/services/production/vscode_integration.js"
+    //   ],
+    //   "env": {
+    //     "MCP_PROXY_URL": "http://127.0.0.1:8081"
+    //   },
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "context7": {
+    //   "type": "stdio",
+    //   "command": "npx",
+    //   "args": [
+    //     "-y",
+    //     "@upstash/context7-mcp"
+    //   ],
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "supabase": {
+    //   "command": "./init/run-supabase-mcp.sh",
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "neo4j-aura": {
+    //   "command": "./init/run-neo4j-aura-mcp.sh",
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "neo4j-cypher": {
+    //   "command": "./init/run-neo4j-cypher-mcp.sh",
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "neo4j-data-modeling": {
+    //   "command": "./init/run-neo4j-data-modeling-mcp.sh",
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // "neo4j-memory": {
+    //   "command": "./init/run-neo4j-memory-mcp.sh",
+    //   "cwd": "/workspaces/resource-setup-scratch"
+    // },
+    // === HTTP Gateway Endpoints (Sandboxed) ===
+    // These use the containerized MCP gateway for secure isolation
+    "context7-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/context7"
+    },
+    "supabase-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/supabase"
+    },
+    // "browser-agent-http": {
+    //   "type": "http",
+    //   "url": "http://localhost:8080/mcp/browser-agent"
+    // },
+    "neo4j-aura-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/neo4j-aura"
+    },
+    "neo4j-cypher-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/neo4j-cypher"
+    },
+    "neo4j-data-modeling-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/neo4j-data-modeling"
+    },
+    "neo4j-memory-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/neo4j-memory"
+    },
+    "sequential-thinking-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/sequential-thinking"
+    }
+  }
+}

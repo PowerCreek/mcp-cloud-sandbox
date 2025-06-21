@@ -1,0 +1,36 @@
+{
+    "servers": {
+        "browser-agent": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/browser-agent"
+        },
+        "context7": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/context7"
+        },
+        "supabase": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/supabase"
+        },
+        "sequential-thinking": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/sequential-thinking"
+        },
+        "neo4j-aura": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/neo4j-aura"
+        },
+        "neo4j-cypher": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/neo4j-cypher"
+        },
+        "neo4j-data-modeling": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/neo4j-data-modeling"
+        },
+        "neo4j-memory": {
+            "type": "http",
+            "url": "http://mcp-gateway:8080/mcp/neo4j-memory"
+        }
+    }
+}

@@ -1,0 +1,19 @@
+# Docker Compose override for development
+# Use: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  mcp-gateway:
+    volumes:
+      # Mount the sandbox-template directory for live code reloading
+      - ../sandbox-template:/app:cached
+    environment:
+      - NODE_ENV=development
+    command: [ "npm", "run", "dev" ]
+
+  agentic-sandbox:
+    environment:
+      - NODE_ENV=development
+    # Mount additional development tools if needed
+    volumes:
+      - ../:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock

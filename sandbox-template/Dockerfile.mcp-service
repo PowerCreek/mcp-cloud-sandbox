@@ -1,0 +1,49 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies for running MCP tools
+RUN apk add --no-cache \
+    bash \
+    curl \
+    git \
+    python3 \
+    py3-pip \
+    docker-cli
+
+# Copy both gateway and bridge packages
+COPY mcp-gateway/package*.json ./mcp-gateway/
+COPY mcp-http-bridge/package*.json ./mcp-http-bridge/
+
+# Install dependencies for both
+WORKDIR /app/mcp-gateway
+RUN npm install
+
+WORKDIR /app/mcp-http-bridge
+RUN npm install
+
+# Copy source files
+WORKDIR /app
+COPY mcp-gateway/ ./mcp-gateway/
+COPY mcp-http-bridge/ ./mcp-http-bridge/
+COPY deps/ ./deps/
+COPY entrypoint-*.sh ./
+
+# Create symlink for init scripts and make entrypoints executable
+RUN ln -s /app/deps/init /app/init && \
+    chmod +x ./entrypoint-*.sh
+
+# Default environment variables
+ENV MCP_HTTP_PORT=3000
+ENV NODE_ENV=production
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${MCP_HTTP_PORT}/health || exit 1
+
+# Expose the HTTP port
+EXPOSE ${MCP_HTTP_PORT}
+
+# Default command runs the HTTP bridge (individual service mode)
+# Override with mcp-gateway/server.js for gateway mode
+CMD ["node", "mcp-http-bridge/index.js"]

@@ -1,0 +1,181 @@
+services:
+  # MCP Gateway - proxies requests to individual MCP service containers
+  mcp-gateway:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: mcp-gateway
+    env_file:
+      - ./.env
+    environment:
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - ai-net
+    labels:
+      - "com.microsoft.devcontainer.name=MCP Gateway"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - neo4j-memory-service
+      - neo4j-cypher-service
+      - neo4j-data-modeling-service
+      - neo4j-aura-service
+      - supabase-service
+      - sequential-thinking-service
+    command: [ "node", "mcp-gateway/server.js" ]
+
+  # Agentic AI Sandbox
+  agentic-sandbox:
+    build: .
+    container_name: agentic-sandbox
+    env_file:
+      - ./.env
+    volumes:
+      - .:/workspace:ro
+    privileged: true
+    ports:
+      - "3000:3000"
+    networks:
+      - ai-net
+    labels:
+      - "com.microsoft.devcontainer.name=Agentic AI Sandbox"
+    depends_on:
+      - mcp-gateway
+    tty: true
+    stdin_open: true
+
+  # Neo4j Memory MCP Service
+  neo4j-memory-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: neo4j-memory-service
+    env_file:
+      - ./.env
+    environment:
+      - NEO4J_URL=${NEO4J_URI:-bolt://localhost:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+      - MCP_HTTP_PORT=3001
+      - MCP_COMMAND=./entrypoint-neo4j-memory.sh
+    ports:
+      - "3001:3001"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+  # Neo4j Cypher MCP Service  
+  neo4j-cypher-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: neo4j-cypher-service
+    env_file:
+      - ./.env
+    environment:
+      - NEO4J_URL=${NEO4J_URI:-bolt://localhost:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-password123}
+      - MCP_HTTP_PORT=3002
+      - MCP_COMMAND=./entrypoint-neo4j-cypher.sh
+    ports:
+      - "3002:3002"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+  # Neo4j Data Modeling MCP Service
+  neo4j-data-modeling-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: neo4j-data-modeling-service
+    env_file:
+      - ./.env
+    environment:
+      - MCP_HTTP_PORT=3003
+      - MCP_COMMAND=./entrypoint-neo4j-data-modeling.sh
+    ports:
+      - "3003:3003"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+  # Neo4j Aura MCP Service
+  neo4j-aura-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: neo4j-aura-service
+    env_file:
+      - ./.env
+    environment:
+      - NEO4J_AURA_INSTANCE_ID=${NEO4J_AURA_INSTANCE_ID:-}
+      - NEO4J_AURA_INSTANCE_USERNAME=${NEO4J_AURA_INSTANCE_USERNAME:-}
+      - NEO4J_AURA_INSTANCE_PASSWORD=${NEO4J_AURA_INSTANCE_PASSWORD:-}
+      - MCP_HTTP_PORT=3004
+      - MCP_COMMAND=./entrypoint-neo4j-aura.sh
+    ports:
+      - "3004:3004"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+  # Supabase MCP Service
+  supabase-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: supabase-service
+    env_file:
+      - ./.env
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY:-}
+      - MCP_HTTP_PORT=3005
+      - MCP_COMMAND=./entrypoint-supabase.sh
+    ports:
+      - "3005:3005"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+  # Sequential Thinking MCP Service
+  sequential-thinking-service:
+    build:
+      context: ../sandbox-template
+      dockerfile: Dockerfile.mcp-service
+    container_name: sequential-thinking-service
+    env_file:
+      - ./.env
+    environment:
+      - MCP_HTTP_PORT=3006
+      - MCP_COMMAND=./entrypoint-sequential-thinking.sh
+    ports:
+      - "3006:3006"
+    networks:
+      - ai-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    privileged: true
+
+networks:
+  ai-net:
+    driver: bridge

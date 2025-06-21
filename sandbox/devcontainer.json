@@ -1,0 +1,21 @@
+{
+    "name": "Agentic AI Sandbox",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "agentic-sandbox",
+    "workspaceFolder": "/workspace",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+                "ms-vscode-remote.remote-containers",
+                "ms-python.python",
+                "ms-azuretools.vscode-docker",
+                "esbenp.prettier-vscode"
+            ]
+        }
+    },
+    "postCreateCommand": "echo 'Dev container ready.'",
+    "remoteUser": "root"
+}

@@ -1,0 +1,43 @@
+services:
+  agentic-sandbox:
+    build: .
+    container_name: agentic-sandbox
+    env_file:
+      - ./.env
+    volumes:
+      - .:/workspace:ro
+    privileged: true # Needed for Docker-in-Docker
+    ports:
+      - "3000:3000"
+    networks:
+      - ai-net
+    labels:
+      - "com.microsoft.devcontainer.name=Agentic AI Sandbox"
+    depends_on:
+      - mcp-gateway
+    tty: true
+    stdin_open: true
+
+  mcp-gateway:
+    build: ../sandbox-template
+    container_name: mcp-gateway
+    env_file:
+      - ./.env
+    environment:
+      - PORT=8080
+    ports:
+      - "8080:8080"
+    networks:
+      - ai-net
+    labels:
+      - "com.microsoft.devcontainer.name=MCP Gateway"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  ai-net:
+    driver: bridge

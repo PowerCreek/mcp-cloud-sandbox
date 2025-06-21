@@ -1,0 +1,21 @@
+{
+    "name": "mcp-gateway",
+    "version": "1.0.0",
+    "description": "HTTP Gateway for MCP tools in sandboxed environment",
+    "main": "server.js",
+    "type": "module",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js",
+        "test": "node test-client.js"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "express": "^4.18.2",
+        "cors": "^2.8.5",
+        "node-fetch": "^3.3.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
