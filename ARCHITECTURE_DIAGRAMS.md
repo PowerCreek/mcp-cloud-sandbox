@@ -484,33 +484,263 @@ graph TB
     class EnvFile,InitScripts,Network runtime
 ```
 
-## 🎯 Key Architectural Principles
+## 🔍 Dynamic Service Discovery Architecture
 
-### 1. **Separation of Concerns**
-- **Gateway Layer**: Pure HTTP proxy with logging
-- **Service Layer**: Individual MCP implementations
-- **Infrastructure Layer**: Container orchestration
+```mermaid
+graph TB
+    subgraph "Service Registration Methods"
+        subgraph "Static Registration"
+            StaticConfig[Static Services Config]
+            SeqThinking[sequential-thinking :3006]
+            Neo4jMem[neo4j-memory :3001]
+            Other[... other static services]
+        end
+        
+        subgraph "Dynamic Registration"
+            DiscoveryAPI[Discovery API Endpoints]
+            POSTRegister[POST /discovery/register]
+            GETServices[GET /discovery/services]
+            SeqThinkingV2[sequential-thinking-v2 :3006]
+        end
+    end
+    
+    subgraph "MCP Gateway with Discovery"
+        subgraph "Discovery Manager"
+            ServiceDiscovery[MCPServiceDiscovery]
+            ServiceMap[Services Map]
+            DiscoveryEndpoints[Discovery Endpoints Set]
+            AutoRefresh[Auto Refresh Timer]
+        end
+        
+        subgraph "API Layer"
+            ProxyEndpoint[/mcp/:service]
+            HealthEndpoint[/health]
+            StatsEndpoint[/discovery/stats]
+            RegisterEndpoint[/discovery/register]
+            UnregisterEndpoint[DELETE /discovery/services/:name]
+        end
+        
+        subgraph "Event Bus Integration"
+            DiscoveryEvents[Discovery Events]
+            ServiceEvents[Service Registration Events]
+            HealthEvents[Health Check Events]
+        end
+    end
+    
+    subgraph "VS Code Integration"
+        VSCodeMCP[VS Code MCP]
+        StaticMCPConfig[sequential-thinking-http]
+        DynamicMCPConfig[sequential-thinking-v2-http]
+    end
+    
+    subgraph "External Discovery Sources"
+        CloudRegistry[Cloud Service Registry]
+        K8sServices[Kubernetes Services]
+        ConsulRegistry[Consul Registry]
+        CustomAPI[Custom Discovery API]
+    end
+    
+    %% Static registration flow
+    StaticConfig --> ServiceDiscovery
+    StaticConfig --> SeqThinking
+    StaticConfig --> Neo4jMem
+    StaticConfig --> Other
+    
+    %% Dynamic registration flow
+    POSTRegister --> ServiceDiscovery
+    GETServices --> ServiceDiscovery
+    ServiceDiscovery --> SeqThinkingV2
+    
+    %% Discovery manager internals
+    ServiceDiscovery --> ServiceMap
+    ServiceDiscovery --> DiscoveryEndpoints
+    ServiceDiscovery --> AutoRefresh
+    
+    %% API integration
+    ProxyEndpoint --> ServiceMap
+    HealthEndpoint --> ServiceMap
+    StatsEndpoint --> ServiceDiscovery
+    RegisterEndpoint --> ServiceDiscovery
+    UnregisterEndpoint --> ServiceDiscovery
+    
+    %% Event integration
+    ServiceDiscovery --> DiscoveryEvents
+    ServiceDiscovery --> ServiceEvents
+    ServiceDiscovery --> HealthEvents
+    
+    %% VS Code integration
+    VSCodeMCP --> StaticMCPConfig
+    VSCodeMCP --> DynamicMCPConfig
+    StaticMCPConfig --> ProxyEndpoint
+    DynamicMCPConfig --> ProxyEndpoint
+    
+    %% External discovery
+    AutoRefresh --> CloudRegistry
+    AutoRefresh --> K8sServices
+    AutoRefresh --> ConsulRegistry
+    AutoRefresh --> CustomAPI
+    
+    %% Service connections
+    SeqThinking -.->|"same backend"| SeqThinkingV2
+    
+    %% Styling
+    classDef static fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    classDef dynamic fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px
+    classDef discovery fill:#E8F5E8,stroke:#388E3C,stroke-width:2px
+    classDef api fill:#FFF3E0,stroke:#F57C00,stroke-width:2px
+    classDef vscode fill:#FFEBEE,stroke:#D32F2F,stroke-width:2px
+    classDef external fill:#F1F8E9,stroke:#689F38,stroke-width:2px
+    
+    class StaticConfig,SeqThinking,Neo4jMem,Other,StaticMCPConfig static
+    class DiscoveryAPI,POSTRegister,GETServices,SeqThinkingV2,DynamicMCPConfig dynamic
+    class ServiceDiscovery,ServiceMap,DiscoveryEndpoints,AutoRefresh,DiscoveryEvents,ServiceEvents,HealthEvents discovery
+    class ProxyEndpoint,HealthEndpoint,StatsEndpoint,RegisterEndpoint,UnregisterEndpoint api
+    class VSCodeMCP vscode
+    class CloudRegistry,K8sServices,ConsulRegistry,CustomAPI external
+```
 
-### 2. **Event-Driven Observability**
-- All requests/responses logged via Event Bus
-- Centralized debugging and monitoring
-- Non-intrusive logging architecture
+## 🔄 Discovery Flow Sequence
 
-### 3. **Capability Propagation**
-- Gateway discovers service capabilities dynamically
-- Accurate capability reporting to VS Code
-- No hardcoded tool definitions
+```mermaid
+sequenceDiagram
+    participant Admin as Administrator
+    participant Gateway as MCP Gateway
+    participant Discovery as Discovery Manager
+    participant ServiceMap as Service Map
+    participant EventBus as Event Bus
+    participant Backend as Backend Service
+    participant VSCode as VS Code
+    
+    Note over Admin,Backend: Static Service Registration (Startup)
+    Gateway->>Discovery: registerStaticServices(config)
+    Discovery->>ServiceMap: add static services
+    Discovery->>EventBus: emit service-registered (static)
+    
+    Note over Admin,Backend: Dynamic Service Registration (Runtime)
+    Admin->>Gateway: POST /discovery/register
+    Gateway->>Discovery: registerDynamicService(name, config)
+    Discovery->>Backend: health check
+    Backend->>Discovery: health response
+    Discovery->>ServiceMap: add dynamic service
+    Discovery->>EventBus: emit service-registered (dynamic)
+    Gateway->>Admin: registration success
+    
+    Note over Admin,Backend: Auto-Discovery (Periodic)
+    Discovery->>Discovery: auto refresh timer
+    Discovery->>Gateway: GET /discovery/services
+    Gateway->>Discovery: services list
+    loop For each discovered service
+        Discovery->>Backend: health check
+        Backend->>Discovery: health response
+        Discovery->>ServiceMap: register if healthy
+        Discovery->>EventBus: emit service-registered (auto)
+    end
+    
+    Note over Admin,Backend: Service Usage (VS Code)
+    VSCode->>Gateway: /mcp/sequential-thinking-v2
+    Gateway->>ServiceMap: getService(sequential-thinking-v2)
+    ServiceMap->>Gateway: service config (dynamic)
+    Gateway->>Backend: proxy request
+    Backend->>Gateway: response
+    Gateway->>VSCode: final response
+    Gateway->>EventBus: emit proxy-request/response
+```
 
-### 4. **Container Isolation**
-- Each service runs in isolated container
-- Shared Docker network for communication
-- Environment-based configuration
+## 📊 Service Discovery Data Model
 
-### 5. **Protocol Compliance**
-- Full JSON-RPC 2.0 implementation
-- Proper MCP initialization sequence
-- Notification handling compliance
+```mermaid
+erDiagram
+    MCPServiceDiscovery {
+        Map services
+        Set discoveryEndpoints
+        number refreshInterval
+        number lastRefresh
+        Timer refreshTimer
+    }
+    
+    ServiceConfig {
+        string url
+        string description
+        object capabilities
+        string type
+        string registered
+        boolean healthy
+        string lastCheck
+    }
+    
+    DiscoveryEndpoint {
+        string url
+        number timeout
+        string method
+        object headers
+    }
+    
+    ServiceRegistration {
+        string serviceName
+        string type
+        timestamp registered
+        object metadata
+    }
+    
+    HealthCheckResult {
+        string serviceName
+        boolean healthy
+        number status
+        string error
+        timestamp lastCheck
+    }
+    
+    EventBusEvent {
+        string type
+        object data
+        timestamp timestamp
+    }
+    
+    MCPServiceDiscovery ||--o{ ServiceConfig : manages
+    MCPServiceDiscovery ||--o{ DiscoveryEndpoint : queries
+    ServiceConfig ||--|| ServiceRegistration : tracked_by
+    ServiceConfig ||--|| HealthCheckResult : monitored_by
+    MCPServiceDiscovery ||--o{ EventBusEvent : emits
+```
+
+## 🎯 Discovery System Benefits
+
+### **Static vs Dynamic Services Comparison**
+
+| Aspect | Static Services | Dynamic Services |
+|--------|----------------|------------------|
+| **Registration** | Hardcoded in gateway config | API-based registration |
+| **Lifecycle** | Startup only | Runtime registration/unregistration |
+| **Discovery** | Manual configuration | Automatic discovery via endpoints |
+| **Scalability** | Limited to predefined services | Unlimited, cloud-native |
+| **Flexibility** | Requires code changes | Zero-downtime service addition |
+| **Use Cases** | Core stable services | Experimental, temporary, cloud services |
+
+### **Key Features Implemented**
+
+1. **🔧 Dual Registration Model**
+   - Static services: `sequential-thinking` (hardcoded)
+   - Dynamic services: `sequential-thinking-v2` (API registered)
+
+2. **🔍 Auto-Discovery**
+   - Periodic polling of discovery endpoints
+   - Health check validation before registration
+   - Automatic service lifecycle management
+
+3. **📊 Service Management APIs**
+   - `POST /discovery/register` - Manual registration
+   - `DELETE /discovery/services/:name` - Unregistration
+   - `GET /discovery/stats` - Discovery statistics
+   - `GET /discovery/health` - Service health overview
+
+4. **🚨 Health Monitoring**
+   - Continuous health checks for all services
+   - Event-driven health status updates
+   - Automatic unhealthy service detection
+
+5. **📈 Event Bus Integration**
+   - Complete audit trail of service operations
+   - Real-time discovery event logging
+   - Service registration/unregistration tracking
 
 ---
-
-*Generated for MCP Cloud Development Sandbox - A comprehensive containerized MCP development environment*

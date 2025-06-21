@@ -91,6 +91,10 @@
     "sequential-thinking-http": {
       "type": "http",
       "url": "http://localhost:8080/mcp/sequential-thinking"
+    },
+    "sequential-thinking-v2-http": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/sequential-thinking-v2"
     }
   }
 }
